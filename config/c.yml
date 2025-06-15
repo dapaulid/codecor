@@ -1,0 +1,15 @@
+file_pattern: "*.c"
+sections:
+  - caption: License Header
+    pattern: (?<=\A)(//-*\n(//.*\n)*//-*\n)*
+    comment_file: LICENSE
+  - caption: Scope Separator
+    pattern: (?<=^}\n\n)(?://-*\n)*
+    comment: |
+      //------------------------------------------------------------------------------
+  - caption: End of File
+    pattern: (?://-*\n(?://.*\n)*)*(?=\Z)
+    count: 1 # not sure why this is needed
+    comment: |
+      //------------------------------------------------------------------------------
+      // end of file
