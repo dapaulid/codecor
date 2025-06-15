@@ -2,7 +2,10 @@ file_pattern: "*.c"
 sections:
   - caption: License Header
     pattern: (?<=\A)(//-*\n(//.*\n)*//-*\n)*
-    comment_file: LICENSE
+    comment: |
+      //------------------------------------------------------------------------------
+      // {file:LICENSE}
+      //------------------------------------------------------------------------------
   - caption: Scope Separator
     pattern: (?<=^}\n\n)(?://-*\n)*
     comment: |

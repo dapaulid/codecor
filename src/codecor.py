@@ -26,16 +26,12 @@ def process_file(filename, config, args):
 		if args.remove:
 			# remove comments
 			comment = ""
-		elif 'comment' in section:
-			# substitute with comments in config
-			comment = section['comment']
 		else:
-			# substitute with comments from file
-			comment = load_text(section['comment_file'])
+			# substitute with comments
+			comment = format_comment(section['comment'])
+		# end if	
 		# maximum number of subsitutions (0 == unlimited)
 		count = section.get('count') or 0
-
-		#print(section)
 
 		# do the substitution
 		text = re.sub(section['pattern'], comment, text, count, flags=re.MULTILINE)
@@ -59,6 +55,20 @@ def process_file(filename, config, args):
 		return False
 	# end if
 		
+def format_comment(comment):
+	formatted = []
+	for line in comment.splitlines():
+		# TODO generalize for arbitrary file paths
+		if "{file:LICENSE}" in line:
+			text = load_text('LICENSE')
+			for line2 in text.splitlines():
+				formatted.append(line.replace("{file:LICENSE}", line2))
+		else:
+			formatted.append(line)
+		# end if
+	# end for
+	# TODO use EOL according to input file		
+	return "\n".join(formatted) + "\n"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--remove", action="store_true",
