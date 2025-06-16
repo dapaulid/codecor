@@ -2,9 +2,8 @@ import yaml
 
 import argparse
 import re
+import os
 from pathlib import Path
-
-input_path = "test"
 
 def load_text(filename):
 	with open(filename, 'r') as file:
@@ -70,25 +69,42 @@ def format_comment(comment):
 	# TODO use EOL according to input file		
 	return "\n".join(formatted) + "\n"
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
+root_dir = os.path.dirname(script_dir)
+
 parser = argparse.ArgumentParser()
+parser.add_argument('path', nargs='?', default='.',
+	help="file or directory to process")
 parser.add_argument("--remove", action="store_true",
 	help="remove any previously generated comments")
 args = parser.parse_args()
 
-# read config file
-with open("config/c.yml", 'r') as stream:
-	config = yaml.safe_load(stream)
+# read config files into dict that maps file extensions to config
+configs = {}
+config_files = Path(root_dir, 'config').rglob('*.yml')
+for filename in config_files:
+	with open(filename, 'r') as file:
+		config = yaml.safe_load(file)
+		for file_ext in config['file_ext'].split():
+			configs[file_ext] = config
+	# end with
+# end for
 
 # process files
 files_total = 0
 files_modified = 0
-file_list = Path(input_path).rglob(config['file_pattern'])
+file_list = Path(args.path).rglob('*.*')
 for filename in file_list:
-	modified = process_file(filename, config, args)
-	if modified:
-		print("modified: %s" % filename)
-		files_modified += 1
-	files_total += 1
+	# does a config exist for this file type?
+	file_ext = os.path.splitext(filename)[1].lower()
+	if file_ext in configs:
+		# yes -> process the file according to config
+		modified = process_file(filename, configs[file_ext], args)
+		if modified:
+			print("modified: %s" % filename)
+			files_modified += 1
+		files_total += 1
+	# end if
 # end for
 	
 # done

@@ -1,4 +1,4 @@
-file_pattern: "*.c"
+file_ext: .c .cpp .h .hpp
 sections:
   - caption: License Header
     pattern: (?<=\A)(//-*\n(//.*\n)*//-*\n)*
