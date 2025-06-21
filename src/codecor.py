@@ -13,6 +13,18 @@ def write_text(filename, text):
 	with open(filename, "w") as file:
 		file.write(text)
 
+def substitute(pattern, repl, text):
+	# we do two passes here (remove/insert instead of replace), because
+	# of subtleties how how regex with lookahead work,
+	# otherwise we may end up in the string being inserted twice.
+
+	# remove first
+	text = re.sub(pattern, "", text, flags=re.MULTILINE)
+	# insert if necessary
+	if repl: 
+		text = re.sub(pattern, repl, text, flags=re.MULTILINE)
+	return text
+
 def process_file(filename, config, args):
 	# load the file
 	text = load_text(filename)
@@ -29,13 +41,10 @@ def process_file(filename, config, args):
 			# substitute with comments
 			comment = format_comment(section['comment'])
 		# end if	
-		# maximum number of subsitutions (0 == unlimited)
-		count = section.get('count') or 0
-
 		# do the substitution
-		text = re.sub(section['pattern'], comment, text, count, flags=re.MULTILINE)
+		text = substitute(section['pattern'], comment, text)
 		# do it again to check if it is not changing anymore
-		text2 = re.sub(section['pattern'], comment, text, count, flags=re.MULTILINE)
+		text2 = substitute(section['pattern'], comment, text)
 		if text2 != text:
 			print(text2)
 			raise Exception('replacement for section "%s" is not idempotent, please check pattern in config' % section['caption'])
