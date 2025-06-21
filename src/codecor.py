@@ -5,13 +5,21 @@ import re
 import os
 from pathlib import Path
 
-def load_text(filename):
-	with open(filename, 'r') as file:
-		return file.read()
+# helper class to load/save text files preserving line ending format
+class TextFile:
+	def __init__(self, filename):
+		self.filename = filename
+		self.text = None
+		self.newline = None
+		self.load()
+	def load(self):
+		with open(self.filename, 'r') as f:
+			self.text = f.read()
+			self.newline = f.newlines[0] if type(f.newlines) is tuple else f.newlines
+	def save(self):
+		with open(self.filename, 'w', newline=self.newline) as f:
+			f.write(self.text)
 
-def write_text(filename, text):
-	with open(filename, "w") as file:
-		file.write(text)
 
 def substitute(pattern, repl, text):
 	# we do two passes here (remove/insert instead of replace), because
@@ -27,11 +35,10 @@ def substitute(pattern, repl, text):
 
 def process_file(filename, config, args):
 	# load the file
-	text = load_text(filename)
+	file = TextFile(filename)
+	orig_text = file.text	
 
 	# process all sections in config
-	modified = False
-	text_orig = text
 	for section in config['sections']:
 		# what to do?
 		if args.remove:
@@ -42,24 +49,21 @@ def process_file(filename, config, args):
 			comment = format_comment(section['comment'])
 		# end if	
 		# do the substitution
-		text = substitute(section['pattern'], comment, text)
+		file.text = substitute(section['pattern'], comment, file.text)
 		# do it again to check if it is not changing anymore
-		text2 = substitute(section['pattern'], comment, text)
-		if text2 != text:
+		text2 = substitute(section['pattern'], comment, file.text)
+		if text2 != file.text:
 			print(text2)
 			raise Exception('replacement for section "%s" is not idempotent, please check pattern in config' % section['caption'])
-		
-		# remember if the original text was modified (at least once)
-		modified = modified or text != text_orig
 	# end for
 	
-	# done
-	if modified:
-		# file content changed, write it back
-		write_text(filename, text)
+	# file content changed?
+	if file.text != orig_text:
+		# yes -> write it back
+		file.save()
 		return True
 	else:
-		# nothing changed
+		# no -> nothing to do
 		return False
 	# end if
 		
@@ -68,7 +72,7 @@ def format_comment(comment):
 	for line in comment.splitlines():
 		# TODO generalize for arbitrary file paths
 		if "{file:LICENSE}" in line:
-			text = load_text('LICENSE')
+			text = TextFile('LICENSE').text
 			for line2 in text.splitlines():
 				formatted.append(line.replace("{file:LICENSE}", line2))
 		else:
